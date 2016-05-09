@@ -1,0 +1,49 @@
+import sys,os,os.path
+os.environ['HTTP_PROXY']="http://www-proxy.idc.oracle.com:80"
+os.environ['HTTPS_PROXY']="http://www-proxy.idc.oracle.com:80"
+
+from bs4 import BeautifulSoup
+from urllib2 import urlopen
+from time import sleep
+
+BASE_URL = "http://www.chicagoreader.com"
+
+def make_soup(url):
+    html = urlopen(url).read()
+    return BeautifulSoup(html, "lxml")
+
+def get_category_links(section_url):
+    soup = make_soup(section_url)
+    boccat = soup.find("dl", "boccat")
+    # print "boccat: "
+    # print boccat
+    category_links = [BASE_URL + dd.a["href"] for dd in boccat.findAll("dd")]
+    # print "category_links: "
+    # print category_links
+    return category_links
+
+def get_category_winner(category_url):
+    soup = make_soup(category_url)
+    # URL_TAIL = category_url[-7:]
+    # HEADLINE_ID = "headline headline-" + URL_TAIL
+    category = soup.find('h1', "headline").string
+    winner = [h2.string for h2 in soup.findAll("h2", "boc1")]
+    runners_up = [h2.string for h2 in soup.findAll("h2", "boc2")]
+    return {"category": category,
+            "category_url": category_url,
+            "winner": winner,
+            "runners_up": runners_up}
+
+if __name__ == '__main__':
+    food_n_drink = ("http://www.chicagoreader.com/chicago/best-of-chicago-2011-food-drink/BestOf?oid=4106228")
+
+    categories = get_category_links(food_n_drink)
+
+    data = [] # a list to store our dictionaries
+    for categ in categories:
+        winner = get_category_winner(categ)
+        data.append(winner)
+        print winner
+        sleep(1) # be nice
+
+    print data
